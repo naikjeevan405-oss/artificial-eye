@@ -30,7 +30,34 @@
     const canvas = document.getElementById('canvas');
     const captureBtn = document.getElementById('captureBtn');
 
-    captureBtn.addEventListener('click', () => {
+    
+  const GEMINI_API_KEY = "[REDACTED_API_KEY]";
+    const MODEL = "gemini-3.1-flash-lite";
+
+    async function analyzeImage(base64Image) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": GEMINI_API_KEY
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: "image/jpeg", data: base64Image } },
+              { text: "Describe what's in front of me in 1-2 short sentences, focused on anything a blind person walking would need to know." }
+            ]
+          }]
+        })
+      });
+
+      const data = await response.json();
+      console.log("Gemini response:", data);
+      return data.candidates[0].content.parts[0].text;
+    }
+    captureBtn.addEventListener('click', async () => {
       const width = video.videoWidth;
       const height = video.videoHeight;
 
@@ -41,7 +68,13 @@
       ctx.drawImage(video, 0, 0, width, height);
 
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      console.log("Captured frame, length:", imageData.length);
+      const base64Only = imageData.split(',')[1]; // strip the "data:image/jpeg;base64," prefix
+
+      captureBtn.textContent = "Analyzing...";
+      const description = await analyzeImage(base64Only);
+      captureBtn.textContent = "Capture";
+
+      alert(description);
     });
   </script>
 
