@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Artificial Eye</title>
+</head>
+<body style="margin:0; background:black;">
+
+  <video id="video" autoplay playsinline style="width:100%; height:100vh; object-fit:cover;"></video>
+
+  <script>
+    const video = document.getElementById('video');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => {
+        console.error("Camera error:", err);
+        alert("Camera access failed: " + err.message);
+      });
+  </script>
+
+</body>
+</html>
