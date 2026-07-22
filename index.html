@@ -8,7 +8,14 @@
 <body style="margin:0; background:black;">
 
   <video id="video" autoplay playsinline style="width:100%; height:100vh; object-fit:cover;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
 
+  <button id="captureBtn" style="
+    position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+    padding:20px 40px; font-size:18px; border-radius:16px; border:none;
+    background:#8FB8FF; font-weight:bold;">
+    Capture
+  </button>
   <script>
     const video = document.getElementById('video');
 
@@ -20,6 +27,22 @@
         console.error("Camera error:", err);
         alert("Camera access failed: " + err.message);
       });
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+
+    captureBtn.addEventListener('click', () => {
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, width, height);
+
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      console.log("Captured frame, length:", imageData.length);
+    });
   </script>
 
 </body>
