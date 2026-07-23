@@ -16,7 +16,31 @@
     background:#8FB8FF; font-weight:bold;">
     Capture
   </button>
+  <button id="settingsBtn" style="
+    position:fixed; top:20px; right:20px;
+    width:44px; height:44px; border-radius:50%; border:none;
+    background:#1D1D27; color:white; font-size:20px;">
+    ⚙️
+  </button>
 
+  <div id="settingsPanel" style="
+    display:none; position:fixed; inset:0; background:#111; color:white;
+    padding:24px; box-sizing:border-box; z-index:10;">
+    <h2>Settings</h2>
+    <label for="apiKeyInput" style="display:block; margin-bottom:8px;">Gemini API Key</label>
+    <input id="apiKeyInput" type="text" placeholder="Paste your key here" style="
+      width:100%; padding:12px; font-size:16px; border-radius:8px; border:none; box-sizing:border-box;">
+    <button id="saveKeyBtn" style="
+      margin-top:16px; padding:12px 24px; border-radius:8px; border:none;
+      background:#8FB8FF; font-weight:bold;">
+      Save
+    </button>
+    <button id="closeSettingsBtn" style="
+      margin-top:16px; margin-left:12px; padding:12px 24px; border-radius:8px; border:none;
+      background:#333; color:white;">
+      Close
+    </button>
+  </div>
   <script type="module">
     import { GoogleGenAI } from "https://esm.sh/@google/genai";
 
@@ -33,10 +57,9 @@
         alert("Camera access failed: " + err.message);
       });
 
-    const GEMINI_API_KEY = "[REDACTED_API_KEY]";
+    let GEMINI_API_KEY = localStorage.getItem('geminiApiKey') || "";
+    let ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
     const MODEL = "gemini-3.1-flash-lite";
-
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
     async function analyzeImage(base64Image) {
       const response = await ai.models.generateContent({
@@ -60,8 +83,35 @@
       utterance.rate = 1.0;
       window.speechSynthesis.speak(utterance);
     }
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsPanel = document.getElementById('settingsPanel');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const saveKeyBtn = document.getElementById('saveKeyBtn');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
 
+    settingsBtn.addEventListener('click', () => {
+      apiKeyInput.value = GEMINI_API_KEY;
+      settingsPanel.style.display = 'block';
+    });
+
+    closeSettingsBtn.addEventListener('click', () => {
+      settingsPanel.style.display = 'none';
+    });
+
+    saveKeyBtn.addEventListener('click', () => {
+      GEMINI_API_KEY = apiKeyInput.value.trim();
+      localStorage.setItem('geminiApiKey', GEMINI_API_KEY);
+      ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+      settingsPanel.style.display = 'none';
+      alert("API key saved.");
+    });
+   
     captureBtn.addEventListener('click', async () => {
+      if (!ai) {
+        alert("Please add your Gemini API key in Settings first.");
+        settingsPanel.style.display = 'block';
+        return;
+      }
       const width = video.videoWidth;
       const height = video.videoHeight;
       canvas.width = width;
@@ -86,4 +136,4 @@
   </script>
 
 </body>
-</html>c
+</html>
