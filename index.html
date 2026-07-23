@@ -8,7 +8,7 @@
 <body style="margin:0; background:black;">
 
   <video id="video" autoplay playsinline style="width:100%; height:100vh; object-fit:cover;"></video>
-<canvas id="canvas" style="display:none;"></canvas>
+  <canvas id="canvas" style="display:none;"></canvas>
 
   <button id="captureBtn" style="
     position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
@@ -16,8 +16,13 @@
     background:#8FB8FF; font-weight:bold;">
     Capture
   </button>
-  <script>
+
+  <script type="module">
+    import { GoogleGenAI } from "https://esm.sh/@google/genai";
+
     const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
       .then(stream => {
@@ -27,56 +32,58 @@
         console.error("Camera error:", err);
         alert("Camera access failed: " + err.message);
       });
-    const canvas = document.getElementById('canvas');
-    const captureBtn = document.getElementById('captureBtn');
 
-    
-  const GEMINI_API_KEY = "[REDACTED_API_KEY]";
+    const GEMINI_API_KEY = "[REDACTED_API_KEY]";
     const MODEL = "gemini-3.1-flash-lite";
 
-    async function analyzeImage(base64Image) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": GEMINI_API_KEY
-        },
-        body: JSON.stringify({
-          contents: [{
+    async function analyzeImage(base64Image) {
+      const response = await ai.models.generateContent({
+        model: MODEL,
+        contents: [
+          {
+            role: "user",
             parts: [
-              { inline_data: { mime_type: "image/jpeg", data: base64Image } },
+              { inlineData: { mimeType: "image/jpeg", data: base64Image } },
               { text: "Describe what's in front of me in 1-2 short sentences, focused on anything a blind person walking would need to know." }
             ]
-          }]
-        })
+          }
+        ]
       });
-
-      const data = await response.json();
-      console.log("Gemini response:", data);
-      return data.candidates[0].content.parts[0].text;
+      return response.text;
     }
+
+    function speak(text) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
     captureBtn.addEventListener('click', async () => {
       const width = video.videoWidth;
       const height = video.videoHeight;
-
       canvas.width = width;
       canvas.height = height;
-
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0, width, height);
-
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      const base64Only = imageData.split(',')[1]; // strip the "data:image/jpeg;base64," prefix
+      const base64Only = imageData.split(',')[1];
 
       captureBtn.textContent = "Analyzing...";
-      const description = await analyzeImage(base64Only);
-      captureBtn.textContent = "Capture";
 
-      alert(description);
+      try {
+        const description = await analyzeImage(base64Only);
+        speak(description);
+      } catch (err) {
+        console.error("Analysis failed:", err);
+        alert("Something went wrong: " + err.message);
+      } finally {
+        captureBtn.textContent = "Capture";
+      }
     });
   </script>
 
 </body>
-</html>
+</html>c
