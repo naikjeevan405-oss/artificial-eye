@@ -41,6 +41,14 @@
       Close
     </button>
   </div>
+  <div id="modeRow" style="
+    position:fixed; bottom:100px; left:0; right:0;
+    display:flex; justify-content:center; gap:10px;">
+    <button class="modeBtn" data-mode="scene" style="padding:10px 16px; border-radius:20px; border:none; background:#8FB8FF; font-weight:bold;">Scene</button>
+    <button class="modeBtn" data-mode="text" style="padding:10px 16px; border-radius:20px; border:none; background:#333; color:white;">Read Text</button>
+    <button class="modeBtn" data-mode="currency" style="padding:10px 16px; border-radius:20px; border:none; background:#333; color:white;">Currency</button>
+    <button class="modeBtn" data-mode="road" style="padding:10px 16px; border-radius:20px; border:none; background:#333; color:white;">Road/Sign</button>
+  </div>
   <script type="module">
     import { GoogleGenAI } from "https://esm.sh/@google/genai";
 
@@ -61,6 +69,15 @@
     let ai = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
     const MODEL = "gemini-3.1-flash-lite";
 
+    const PROMPTS = {
+         scene: "Describe what's in front of me in 1-2 short sentences, focused on anything a blind person walking would need to know.",
+        text: "Read aloud any text visible in this image (signs, labels, documents). If there's no text, say so in one short sentence.",
+         currency: "Identify any currency notes or coins visible — denomination, currency, and how many. If none visible, say so in one short sentence.",
+        road: "Describe road and safety information only: traffic signals, crosswalks, oncoming vehicles, curbs, and any street signs. Prioritize the most urgent hazard first. Keep it to 1-2 short sentences."
+    };
+
+let currentMode = "scene";
+
     async function analyzeImage(base64Image) {
       const response = await ai.models.generateContent({
         model: MODEL,
@@ -69,7 +86,7 @@
             role: "user",
             parts: [
               { inlineData: { mimeType: "image/jpeg", data: base64Image } },
-              { text: "Describe what's in front of me in 1-2 short sentences, focused on anything a blind person walking would need to know." }
+              { text: PROMPTS[currentMode] }
             ]
           }
         ]
@@ -96,6 +113,20 @@
 
     closeSettingsBtn.addEventListener('click', () => {
       settingsPanel.style.display = 'none';
+    });
+    const modeButtons = document.querySelectorAll('.modeBtn');
+
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentMode = btn.dataset.mode;
+
+        modeButtons.forEach(b => {
+          b.style.background = '#333';
+          b.style.color = 'white';
+        });
+        btn.style.background = '#8FB8FF';
+        btn.style.color = 'black';
+      });
     });
 
     saveKeyBtn.addEventListener('click', () => {
